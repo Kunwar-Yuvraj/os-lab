@@ -12,7 +12,7 @@ pthread_mutex_t mtx;
 
 void *producer(void *arg) {
     int item;
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 5; i++) {
         item = i;
         sem_wait(&empty);
         pthread_mutex_lock(&mtx);
@@ -26,7 +26,7 @@ void *producer(void *arg) {
 
 void *consumer(void *arg) {
     int item;
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < 5; i++) {
         sem_wait(&full);
         pthread_mutex_lock(&mtx);
         item = buf[--idx];
