@@ -1,77 +1,100 @@
-#include <stdio.h>
-#include <stdlib.h>
+// SJF Non Preemptive
 
-typedef struct {
-    int id, at, bt, ct, wt, tat;
+#include <stdio.h>
+#include <limits.h>
+
+typedef struct
+{
+    int id, at, bt, rt, ct, tat, wt, start;
 } Process;
 
-void sjfNonPreemptive(Process proc[], int n) {
-    int completed = 0, time = 0;
-    Process temp;
+int findMinIndex(Process procs[], int n, int time){
+    int minIndex = -1;
+    int minRT = INT_MAX;
 
-    // Sort processes by arrival time
-    for (int i = 0; i < n - 1; i++) {
-        for (int j = i + 1; j < n; j++) {
-            if (proc[i].at > proc[j].at) {
-                temp = proc[i];
-                proc[i] = proc[j];
-                proc[j] = temp;
-            }
+    for (int i = 0; i < n; i++){
+        Process p = procs[i];
+        if (p.at <= time && p.rt > 0 && p.rt < minRT){
+            minIndex = i;
+            minRT = p.rt;
         }
     }
 
-    while (completed < n) {
-        int idx = -1, min_bt = 1e9;
-        // Find the process with the shortest burst time that has arrived
-        for (int i = 0; i < n; i++) {
-            if (proc[i].at <= time && proc[i].bt < min_bt && proc[i].bt > 0) {
-                min_bt = proc[i].bt;
-                idx = i;
-            }
-        }
-        
-        if (idx != -1) {
-            time += proc[idx].bt;
-            proc[idx].ct = time;
-            proc[idx].tat = proc[idx].ct - proc[idx].at;
-            proc[idx].wt = proc[idx].tat - proc[idx].bt;
-            proc[idx].bt = 0;
-            completed++;
-        } else {
+    return minIndex;
+}
+
+void findTimes(Process procs[], int n){
+    int time = 0;
+    int completed = 0;
+
+    printf("Gantt Chart:\n");
+
+    while (completed < n){
+        int currIndex = findMinIndex(procs, n, time);
+
+        if (currIndex == -1){
+            printf("Idle ");
             time++;
+            continue;
         }
+
+        Process *p = &procs[currIndex];
+        
+        if (p->rt == p->bt){
+            p->start = time;
+        }
+
+        printf("P%d ", p->id);
+
+        time += p->rt;
+
+        p->rt = 0;
+        p->ct = time;
+        p->tat = p->ct - p->at;
+        p->wt = p->tat - p->bt;
+
+        completed++;
     }
+    printf("\n");
 }
 
-void printResults(Process proc[], int n) {
-    int total_wt = 0, total_tat = 0;
+void printRes(Process *procs, int n){
+    float tat = 0;
+    float wt = 0;
+    float response = 0;
 
-    printf("ID\tAT\tBT\tCT\tWT\tTAT\n");
-    for (int i = 0; i < n; i++) {
-        total_wt += proc[i].wt;
-        total_tat += proc[i].tat;
-        printf("%d\t%d\t%d\t%d\t%d\t%d\n", proc[i].id, proc[i].at, proc[i].bt, proc[i].ct, proc[i].wt, proc[i].tat);
+    printf("ID\tAT\tBT\tCT\tTAT\tWT\tRT\n");
+
+    for (int i = 0; i < n; i++){
+        Process p = procs[i];
+        tat += p.tat;
+        wt += p.wt;
+        response += (p.start - p.at);
+
+        printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n", p.id, p.at, p.bt, p.ct, p.tat, p.wt, (p.start - p.at));
     }
 
-    printf("\nAverage Waiting Time: %.2f\n", (float)total_wt / n);
-    printf("Average Turnaround Time: %.2f\n", (float)total_tat / n);
+    printf("Average Turnaround time: %.2f\n", (tat / n));
+    printf("Average Waiting Time: %.2f\n", (wt / n));
+    printf("Average Response Time: %.2f\n", (response / n));
 }
 
-int main() {
+void main(){
     int n;
     printf("Enter number of processes: ");
     scanf("%d", &n);
 
-    Process proc[n];
-    for (int i = 0; i < n; i++) {
-        printf("Enter arrival time and burst time for process %d: ", i + 1);
-        proc[i].id = i + 1;
-        scanf("%d %d", &proc[i].at, &proc[i].bt);
-        proc[i].bt = proc[i].bt; // Initialize burst time
+    Process procs[n];
+
+    for (int i = 0; i < n; i++){
+        printf("Enter arrival time and burst time: ");
+        scanf("%d %d", &procs[i].at, &procs[i].bt);
+
+        procs[i].rt = procs[i].bt;
+        procs[i].id = (i + 1);
+        procs[i].start = -1;
     }
 
-    sjfNonPreemptive(proc, n);
-    printResults(proc, n);
-
-    return 0;
+    findTimes(procs, n);
+    printRes(procs, n);
 }
