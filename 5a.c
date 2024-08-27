@@ -1,64 +1,33 @@
 #include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/stat.h>
+#include <stdlib.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <fcntl.h>
 
-#define BUF_SIZE 2
+#define BS 30
 
-void read_10_chars(int fd);
-void skip_5_chars(int fd);
-void go_5th_last(int fd);
-void go_3rd(int fd);
+void main(){
+    int buffer[BS];
+    int fd = open("example.txt", O_RDWR);
+    int n;
 
-int main() {
-    int fd = open("5a.txt", O_RDONLY);
-    if (fd < 0) {
-        perror("open");
-        return 1;
-    }
+    printf("\nPrinting 10 characters from the file:\n");
+    n = read(fd, buffer, 10);
+    write(1, buffer, n);
 
-    read_10_chars(fd);
-    skip_5_chars(fd);
-    go_5th_last(fd);
-    go_3rd(fd);
-
-    close(fd);
-    return 0;
-}
-
-void read_10_chars(int fd) {
-    char buf[11]; // 10 chars + null terminator
-    ssize_t n = read(fd, buf, 10);
-    if (n > 0) {
-        buf[n] = '\0';
-        printf("%s\n", buf);
-    }
-}
-
-void skip_5_chars(int fd) {
+    printf("\nSkipping 5 characters from current position:\n");
     lseek(fd, 5, SEEK_CUR);
-    read_10_chars(fd);
-    
-}
+    n = read(fd, buffer, 10);
+    write(1, buffer, n);
 
-void go_5th_last(int fd) {
-    off_t size = lseek(fd, 0, SEEK_END);
-    lseek(fd, size - 5, SEEK_SET);
-    char buf[BUF_SIZE];
-    ssize_t n = read(fd, buf, 1);
-    if (n > 0) {
-        buf[n] = '\0';
-        printf("%s\n", buf);
-    }
-}
+    printf("\nGoing to 5th last character in the file:\n");
+    lseek(fd, -5, SEEK_END);
+    n = read(fd, buffer, 1);
+    write(1, buffer, n);
 
-void go_3rd(int fd) {
-    lseek(fd, 2, SEEK_SET);
-    char buf[BUF_SIZE];
-    ssize_t n = read(fd, buf, 1);
-    if (n > 0) {
-        buf[n] = '\0';
-        printf("%s\n", buf);
-    }
+    printf("\nGoing to 3rd character in the file:\n");
+    lseek(fd, 3, SEEK_SET);
+    n = read(fd, buffer, 1);
+    write(1, buffer, n);
 }
