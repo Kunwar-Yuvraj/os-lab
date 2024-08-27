@@ -1,80 +1,101 @@
+// Preemptive Priority Scheduling
+
 #include <stdio.h>
 #include <limits.h>
 
-#define MAX 10
+typedef struct{
+    int id, at, bt, rt, ct, tat, wt, start, priority;
+} Process;
 
-typedef struct {
-    int id, arr, burst, prio, rem, fin, tat, wt;
-} P;
+int findMinIndex(Process procs[], int n, int time){
+    int minIndex = -1;
+    int maxPriority = INT_MIN;
 
-void sched(P p[], int n);
-void print(P p[], int n);
+    for (int i = 0; i < n; i++){
+        Process p = procs[i];
+        if (p.at <= time && p.rt > 0 && p.priority > maxPriority){
+            maxPriority = p.priority;
+            minIndex = i;
+        }
+    }
 
-int main() {
-    int n, i;
-    P p[MAX];
+    return minIndex;
+}
 
-    printf("Processes: ");
+void findTimes(Process procs[], int n){
+    int time = 0;
+    int completed = 0;
+
+    printf("Gantt Chart:\n");
+
+    while (completed < n){
+        int curIndex = findMinIndex(procs, n, time);
+
+        if (curIndex == -1){
+            printf("Idle ");
+            time++;
+            continue;
+        }
+
+        Process *p = &procs[curIndex];
+
+        if (p->rt == p->bt){
+            p->start = time;
+        }
+
+        printf("P%d ", p->id);
+
+        time++;
+        p->rt--;
+
+        if (p->rt == 0){
+            p->ct = time;
+            p->tat = p->ct - p->at;
+            p->wt = p->tat - p->bt;
+
+            completed++;
+        }
+    }
+    printf("\n");
+}
+
+void printRes(Process procs[], int n){
+    float tat = 0;
+    float wt = 0;
+    float response = 0;
+
+    printf("ID\tAT\tBT\tPr\tCT\tTAT\tWT\tRT\n");
+
+    for (int i = 0; i < n; i++){
+        Process p = procs[i];
+        tat += p.tat;
+        wt += p.wt;
+        response += (p.start - p.at);
+
+        printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\n", p.id, p.at, p.bt, p.priority, p.ct, p.tat, p.wt, (p.start - p.at));
+    }
+
+    printf("Average Turnaround Time: %.2f\n", tat / n);
+    printf("Average Waiting Time: %.2f\n", wt / n);
+    printf("Average Response Time: %.2f\n", response / n);
+}
+
+void main(){
+    int n;
+    printf("Enter number of processes: ");
     scanf("%d", &n);
 
-    for (i = 0; i < n; i++) {
-        p[i].id = i + 1;
-        printf("P%d arrival, burst, priority: ", i + 1);
-        scanf("%d %d %d", &p[i].arr, &p[i].burst, &p[i].prio);
-        p[i].rem = p[i].burst;
+    Process procs[n];
+
+    for (int i = 0; i < n; i++){
+        printf("Enter arrival time, burst time and priority: ");
+        scanf("%d %d %d", &procs[i].at, &procs[i].bt, &procs[i].priority);
+
+        procs[i].rt = procs[i].bt;
+        procs[i].id = i + 1;
+        procs[i].start = -1;
     }
 
-    sched(p, n);
-    print(p, n);
-
-    return 0;
-}
-
-void sched(P p[], int n) {
-    int t = 0, c = 0, i;
-    while (c < n) {
-        P *cur = NULL;
-        int hp = -1;
-
-        for (i = 0; i < n; i++) {
-            if (p[i].arr <= t && p[i].rem > 0) {
-                if (p[i].prio > hp) {
-                    hp = p[i].prio;
-                    cur = &p[i];
-                }
-            }
-        }
-
-        if (cur) {
-            cur->rem--;
-            if (cur->rem == 0) {
-                cur->fin = t + 1;
-                cur->tat = cur->fin - cur->arr;
-                cur->wt = cur->tat - cur->burst;
-                c++;
-            }
-        }
-        t++;
-    }
-}
-
-void print(P p[], int n) {
-    int i;
-    float avg_wt = 0, avg_tat = 0, avg_rt = 0;
-
-    printf("ID\tArrival\tBurst\tPriority\tCompletion\tTurnaround\tWaiting\n");
-    for (i = 0; i < n; i++) {
-        avg_wt += p[i].wt;
-        avg_tat += p[i].tat;
-        avg_rt += p[i].tat - p[i].burst; // Response time = Turnaround time - Burst time
-        printf("%d\t%d\t%d\t%d\t\t%d\t\t%d\t\t%d\n", p[i].id, p[i].arr, p[i].burst, p[i].prio, p[i].fin, p[i].tat, p[i].wt);
-    }
-
-    avg_wt /= n;
-    avg_tat /= n;
-    avg_rt /= n;
-
-    printf("\nAverage Waiting Time: %.2f\n", avg_wt);
-    printf("Average Turnaround Time: %.2f\n", avg_tat);
-    printf("Average Response Time: %.2f\n", avg_rt);
+    findTimes(procs, n);
+    printRes(procs, n);
 }
