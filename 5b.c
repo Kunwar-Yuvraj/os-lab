@@ -1,67 +1,101 @@
 #include <stdio.h>
-
-#define MAX 10
+#include <limits.h>
 
 typedef struct {
-    int id, arr, burst, fin, tat, wt, rt, start;
+    int id, at, bt, rt, ct, tat, wt, start;
 } Process;
 
-void fcfs(Process p[], int n);
-void print(Process p[], int n);
+// Function to find the index of the next process based on arrival time
+int findNextProcessIndex(Process procs[], int n, int time) {
+    int minIndex = -1;
+    int minAT = INT_MAX;
+
+    for (int i = 0; i < n; i++) {
+        Process p = procs[i];
+        if (p.at <= time && p.rt > 0 && p.at < minAT) {
+                minIndex = i;
+                minAT = p.at;
+        }
+    }
+
+    return minIndex;
+}
+
+// Function to calculate times and generate Gantt Chart for FCFS
+void findTimes(Process procs[], int n) {
+    int time = 0;
+    int completed = 0;
+
+    printf("Gantt Chart:\n");
+
+    while (completed < n) {
+        int curIndex = findNextProcessIndex(procs, n, time);
+
+        if (curIndex == -1) {
+            printf("Idle ");
+            time++;
+            continue;
+        }
+
+        Process* p = &procs[curIndex];
+
+        if (p->rt == p->bt) {
+            p->start = time;
+        }
+
+        printf("P%d ", p->id);
+
+        time += p->rt; // Process runs to completion
+        p->rt = 0; // Mark process as completed
+
+        p->ct = time;
+        p->tat = p->ct - p->at;
+        p->wt = p->tat - p->bt;
+        completed++;
+    }
+    printf("\n");
+}
+
+// Function to print results
+void printRes(Process procs[], int n) {
+    float tat = 0;
+    float wt = 0;
+    float response = 0;
+
+    printf("ID\tAT\tBT\tCT\tTAT\tWT\tRT\n");
+
+    for (int i = 0; i < n; i++) {
+        Process p = procs[i];
+        tat += p.tat;
+        wt += p.wt;
+        response += (p.start - p.at);
+
+        printf("%d\t%d\t%d\t%d\t%d\t%d\t%d\n", p.id, p.at, p.bt, p.ct, p.tat, p.wt, (p.start - p.at));
+    }
+
+    printf("Average Turnaround Time: %.2f\n", tat / n);
+    printf("Average Waiting Time: %.2f\n", wt / n);
+    printf("Average Response Time: %.2f\n", response / n);
+}
 
 int main() {
-    int n, i;
-    Process p[MAX];
-
-    printf("Number of processes: ");
+    int n;
+    printf("Enter number of processes: ");
     scanf("%d", &n);
 
-    for (i = 0; i < n; i++) {
-        p[i].id = i + 1;
-        printf("P%d arrival and burst time: ", i + 1);
-        scanf("%d %d", &p[i].arr, &p[i].burst);
+    Process procs[n];
+
+    for (int i = 0; i < n; i++) {
+        printf("Enter arrival time and burst time for process %d: ", i + 1);
+        scanf("%d %d", &procs[i].at, &procs[i].bt);
+
+        procs[i].id = i + 1;
+        procs[i].rt = procs[i].bt;
+        procs[i].start = -1;
     }
 
-    fcfs(p, n);
-    print(p, n);
+    findTimes(procs, n);
+    printRes(procs, n);
 
     return 0;
-}
-
-void fcfs(Process p[], int n) {
-    int i;
-    int t = 0; // Current time
-
-    for (i = 0; i < n; i++) {
-        if (p[i].arr > t) {
-            t = p[i].arr; // If the process arrives after the current time, set current time to arrival
-        }
-        p[i].start = t;
-        p[i].fin = t + p[i].burst;
-        p[i].tat = p[i].fin - p[i].arr;
-        p[i].wt = p[i].tat - p[i].burst;
-        p[i].rt = p[i].start - p[i].arr; // Response time is start time - arrival time
-        t += p[i].burst; // Move time forward by burst time
-    }
-}
-
-void print(Process p[], int n) {
-    int i;
-    float avg_wt = 0, avg_tat = 0, avg_rt = 0;
-
-    printf("ID\tArrival\tBurst\tStart\tCompletion\tTurnaround\tWaiting\tResponse\n");
-    for (i = 0; i < n; i++) {
-        avg_wt += p[i].wt;
-        avg_tat += p[i].tat;
-        avg_rt += p[i].rt;
-        printf("%d\t%d\t%d\t%d\t%d\t\t%d\t\t%d\t%d\n", p[i].id, p[i].arr, p[i].burst, p[i].start, p[i].fin, p[i].tat, p[i].wt, p[i].rt);
-    }
-
-    avg_wt /= n;
-    avg_tat /= n;
-    avg_rt /= n;
-
-    printf("\nAverage Waiting Time: %.2f\n", avg_wt);
-    printf("Average Turnaround Time: %.2f\n", avg_tat);
-    printf("Average Response Time: %.2f\n", avg_rt);
 }
