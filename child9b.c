@@ -1,29 +1,25 @@
-// child.c
-#include <stdio.h>
-#include <stdlib.h>
+// oddgen.c
+#include <sys/ipc.h>
 #include <sys/shm.h>
-
-#define SHM_KEY 1234
-#define MAX 100
+#include <unistd.h>
 
 int main() {
-    int shmid, *shm_ptr, num;
+    int N = 10; // Number of odd numbers
+    key_t key = 1234;
+    int shmid;
+    int *shm_addr;
 
-    // Get shared memory
-    shmid = shmget(SHM_KEY, MAX * sizeof(int), IPC_CREAT | 0666);
-    shm_ptr = (int *)shmat(shmid, NULL, 0);
+    // Attach to shared memory
+    shmid = shmget(key, N * sizeof(int), 0666);
+    shm_addr = (int *)shmat(shmid, NULL, 0);
 
-    // Get number of odd numbers
-    printf("Enter number of odd numbers to generate: ");
-    scanf("%d", &num);
+    // Generate and write odd numbers to shared memory
+    for (int i = 0; i < N; i++) {
+        shm_addr[i] = 2 * i + 1;
+    }
 
-    // Write number of odd numbers as the first value
-    shm_ptr[0] = num;
+    // Detach from shared memory
+    shmdt(shm_addr);
 
-    // Generate and store odd numbers
-    for (int i = 1; i <= num; i++) shm_ptr[i] = 2 * (i - 1) + 1;
-
-    // Detach and exit
-    shmdt(shm_ptr);
     return 0;
 }
